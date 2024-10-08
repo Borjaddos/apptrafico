@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Página de Flask</title>
+</head>
+<body>
+    <h1>Bienvenido a mi página de Flask</h1>
+    <button id="fetch-time">Obtener Hora Actual</button>
+    <div id="time-display"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

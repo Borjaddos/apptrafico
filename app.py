@@ -1,4 +1,4 @@
-from flask import Flask,jsonify
+from flask import Flask,jsonify,render_template
 import psycopg2 
 import os
 
@@ -8,7 +8,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 @app.route('/')
 def index():
-    return "Hola Mundo"
+    return render_template('index.html')
 
 @app.route('/db')
 def db():

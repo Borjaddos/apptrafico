@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+#fetch-time {
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#time-display {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #555;
+}
