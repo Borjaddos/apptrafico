@@ -3,40 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa Interactivo</title>
-    
-    <!-- Incluimos Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-
+    <title>Mapa con Puntos desde BD</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <style>
-        /* Estilos para el mapa */
-        #map {
-            height: 500px;
-            width: 100%;
-        }
+        #map { height: 500px; }
+        #location-list { margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>Mapa Interactivo</h1>
-    <p>Este mapa está alimentado por datos de la base de datos.</p>
-
-    <!-- Aquí es donde irá el mapa -->
+    <h1>Mapa de Localizaciones</h1>
     <div id="map"></div>
 
-    <!-- Incluimos Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    
+    <h2>Lista de Localizaciones</h2>
+    <div id="location-list"></div> <!-- Aquí se mostrarán los nombres de las localizaciones -->
+
+    <h2>Buscar Localizaciones</h2>
+    <form id="search-form">
+        <input type="text" id="search-query" placeholder="Nombre de la localización">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <div id="search-results"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
         // Inicializar el mapa
-        var map = L.map('map').setView([40.416775, -3.703790], 6); // Coordenadas iniciales y zoom
+        var map = L.map('map').setView([0, 0], 2);
 
-        // Añadir capa de mapa
+        // Agregar capa base del mapa
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Añadir marcador de ejemplo
-        // Aquí se añadirán los datos dinámicamente
+        // Obtener las localizaciones desde el backend
+        fetch('/get_locations')
+            .then(response => response.json())
+            .then(data => {
+                // Añadir cada punto al mapa
+                data.forEach(location => {
+                    // Añadir marcadores en el mapa
+                    L.marker([location.latitude, location.longitude])
+                        .addTo(map)
+                        .bindPopup(`<b>${location.name}</b>`);
+
+                    // Mostrar el nombre de cada localización debajo del mapa
+                    var locationItem = document.createElement('div');
+                    locationItem.textContent = `Nombre: ${location.name}`;
+                    document.getElementById('location-list').appendChild(locationItem);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+
+        // Manejar la búsqueda de localizaciones
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevenir recarga de la página
+
+            var query = document.getElementById('search-query').value;
+
+            fetch(`/search_location?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Limpiar los resultados anteriores
+                    document.getElementById('search-results').innerHTML = '';
+
+                    // Mostrar los resultados
+                    data.forEach(location => {
+                        var resultItem = document.createElement('div');
+                        resultItem.innerHTML = `<b>${location.name}</b> - Latitud: ${location.latitude}, Longitud: ${location.longitude}`;
+                        document.getElementById('search-results').appendChild(resultItem);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        });
     </script>
 </body>
 </html>
