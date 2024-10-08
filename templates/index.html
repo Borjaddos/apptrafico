@@ -3,14 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <title>Página de Flask</title>
+    <title>BBVA - Inversiones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #004481;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .banner {
+            background-color: #f4f4f4;
+            padding: 20px;
+            text-align: center;
+        }
+        .banner h1 {
+            margin: 0;
+        }
+        .banner p {
+            margin: 10px 0;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        .buttons a {
+            background-color: #004481;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            margin: 0 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Bienvenido a mi página de Flask</h1>
-    <button id="fetch-time">Obtener Hora Actual</button>
-    <div id="time-display"></div>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <div class="navbar">
+        <div class="logo">BBVA</div>
+        <div class="links">
+            <a href="#">Inversiones</a>
+            <a href="#">Préstamos</a>
+            <a href="#">Fondos de Inversión</a>
+            <!-- Añade más enlaces según sea necesario -->
+        </div>
+    </div>
+    <div class="banner">
+        <h1>¿Buscas un fondo de inversión?</h1>
+        <p>Encuentra el que mejor encaja con tus objetivos para hacer crecer tu dinero.</p>
+        <p>Consulta nuestra selección ordenada por categorías y da el paso.</p>
+        <div class="buttons">
+            <a href="#">Consulta la selección</a>
+            <a href="#">Más información</a>
+        </div>
+    </div>
 </body>
 </html>
+
