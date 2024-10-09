@@ -4,105 +4,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Predicciones de Transporte</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        #map {
-            height: 400px; /* Ajustar la altura del mapa */
-            width: 100%; /* Ancho completo */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        #prediction {
-            margin-top: 20px; /* Espacio entre el mapa y la sección de predicción */
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #333;
+        }
+
+        .nav {
+            margin-bottom: 20px;
+        }
+
+        .nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #007BFF;
+        }
+
+        /* Mapa */
+        #map {
+            height: 400px; /* Ajusta esta altura según lo necesario */
+            width: 100%;
+        }
+
+        /* Tarjeta de predicciones mayores a 400 */
+        .prediccion {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .prediccion h3 {
+            margin-top: 0;
         }
     </style>
 </head>
 <body>
-    <div>
-        <h1>Predicciones de Transporte</h1>
-        <input type="date" id="fecha" value="{{ fecha_actual }}">
-        <select id="hora">
-            <option value="00:00">00:00</option>
-            <option value="01:00">01:00</option>
-            <option value="02:00">02:00</option>
-            <option value="03:00">03:00</option>
-            <option value="04:00">04:00</option>
-            <option value="05:00">05:00</option>
-            <option value="06:00">06:00</option>
-            <option value="07:00">07:00</option>
-            <option value="08:00">08:00</option>
-            <option value="09:00">09:00</option>
-            <option value="10:00">10:00</option>
-            <option value="11:00">11:00</option>
-            <option value="12:00">12:00</option>
-            <option value="13:00">13:00</option>
-            <option value="14:00">14:00</option>
-            <option value="15:00">15:00</option>
-            <option value="16:00">16:00</option>
-            <option value="17:00">17:00</option>
-            <option value="18:00">18:00</option>
-            <option value="19:00">19:00</option>
-            <option value="20:00">20:00</option>
-            <option value="21:00">21:00</option>
-            <option value="22:00">22:00</option>
-            <option value="23:00">23:00</option>
-        </select>
-        <button onclick="loadMapData()">Cargar Datos</button>
-    </div>
-    <div id="map"></div>
-    <div id="prediction"></div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
-    <script>
-        var map = L.map('map').setView([43.3, -2.0], 8); // Coordenadas aproximadas del País Vasco
+    <div class="container">
+        <!-- Barra de navegación -->
+        <div class="nav">
+            <a href="/">Inicio</a>
+            <a href="/about">Sobre el Proyecto</a> <!-- Enlace a la página de explicación -->
+        </div>
 
+        <!-- Encabezado -->
+        <h1>Predicciones de Transporte</h1>
+
+        <!-- Selector de fecha y hora -->
+        <label for="fecha">Selecciona una fecha:</label>
+        <input type="date" id="fecha" value="{{ fecha_actual|date('Y-m-d') }}">
+
+        <label for="hora">Selecciona una hora:</label>
+        <input type="time" id="hora" value="{{ hora_actual|strftime('%H:00') }}" step="3600">
+
+        <button id="actualizar">Actualizar Mapa</button>
+
+        <!-- Mapa interactivo -->
+        <div id="map"></div>
+
+        <!-- Tarjeta para mostrar próximas predicciones mayores a 400 -->
+        <div class="prediccion">
+            <h3>Próxima Predicción Mayor a 400</h3>
+            {% if proximas_predicciones %}
+                <ul>
+                    {% for prediccion in proximas_predicciones %}
+                    <li>
+                        <strong>Estación:</strong> {{ prediccion.Estacion }}<br>
+                        <strong>Fecha y Hora:</strong> {{ prediccion.Fecha_Hora }}<br>
+                        <strong>Ida:</strong> {{ prediccion.ida }}<br>
+                        <strong>Vuelta:</strong> {{ prediccion.vuelta }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No hay predicciones mayores a 400 en las próximas horas.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Scripts de Leaflet.js para el mapa -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Crear el mapa y centrarlo en el País Vasco
+        var map = L.map('map').setView([43.25, -2.96], 10);
+
+        // Cargar y mostrar el mapa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        function loadMapData() {
-            var fecha = document.getElementById('fecha').value;
-            var hora = document.getElementById('hora').value;
+        // Estaciones y marcadores dinámicos con datos de ida y vuelta
+        var estaciones = {{ estaciones|tojson }};
+        estaciones.forEach(function(estacion) {
+            var markerColor;
 
-            fetch(`/map_data?fecha=${fecha}&hora=${hora}`)
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(item => {
-                        let color;
-                        if (item.ida > 400 || item.vuelta > 400) {
-                            color = "green";
-                        } else {
-                            color = "red";
-                        }
+            // Cambiar el color del marcador según los valores de ida y vuelta
+            if (estacion.ida > 500 || estacion.vuelta > 500) {
+                markerColor = 'red';
+            } else if (estacion.ida > 300 || estacion.vuelta > 300) {
+                markerColor = 'orange';
+            } else {
+                markerColor = 'green';
+            }
 
-                        L.circleMarker([item.Y, item.X], {
-                            radius: 8,
-                            fillColor: color,
-                            color: "#000",
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }).addTo(map)
-                        .bindPopup(`Estación: ${item.Estacion}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
-                    });
-                });
-            
-            fetch('/next_prediction')
-                .then(response => response.json())
-                .then(prediction => {
-                    if (prediction) {
-                        document.getElementById('prediction').innerHTML = `
-                            <h3>Próxima Predicción:</h3>
-                            <p>Estación: ${prediction.Estacion}</p>
-                            <p>Fecha y Hora: ${new Date(prediction.Fecha_Hora).toUTCString()}</p>
-                            <p>Ida: ${prediction.ida}</p>
-                            <p>Vuelta: ${prediction.vuelta}</p>
-                        `;
-                    } else {
-                        document.getElementById('prediction').innerHTML = `
-                            <h3>No hay predicciones futuras que superen 400.</h3>
-                        `;
-                    }
-                });
-        }
+            var marker = L.circleMarker([estacion.Y, estacion.X], {
+                color: markerColor,
+                radius: 8
+            }).addTo(map);
+
+            // Añadir popup con detalles de la estación
+            marker.bindPopup("<b>Estación: " + estacion.Estacion + "</b><br>" +
+                "Ida: " + estacion.ida + "<br>" +
+                "Vuelta: " + estacion.vuelta);
+        });
+
+        // Actualización del mapa al cambiar fecha y hora
+        document.getElementById("actualizar").onclick = function() {
+            var fecha = document.getElementById("fecha").value;
+            var hora = document.getElementById("hora").value;
+            window.location.href = "/?fecha=" + fecha + "&hora=" + hora;
+        };
     </script>
 </body>
 </html>
