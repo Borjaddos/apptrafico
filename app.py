@@ -1,7 +1,7 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template
 import psycopg2
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -11,48 +11,70 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 def index():
     return render_template('index.html')
 
-@app.route('/map-data')
-def map_data():
-    # Obtener la fecha y hora seleccionada por el usuario
-    datetime_str = request.args.get('datetime')
-    
+@app.route('/map_data/<fecha>/<hora>')
+def map_data(fecha, hora):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
+    
+    # Convertir fecha y hora a un timestamp
+    timestamp = f"{fecha} {hora}:00"
 
-    # Obtener los puntos para la fecha y hora seleccionada
-    query = """
-        SELECT Fecha_Hora, prediction, Description, X, Y
+    # Consulta para obtener datos de las estaciones
+    cur.execute("""
+        SELECT Estacion, X, Y, ida, vuelta, Description
         FROM predicciones
         WHERE Fecha_Hora = %s
-    """
-    cur.execute(query, (datetime_str,))
-    results = cur.fetchall()
-
-    # Formato de los resultados
-    data = []
-    for row in results:
-        data.append({
-            'timestamp': row[0].strftime('%Y-%m-%d %H:%M:%S'),
-            'prediction': row[1],
-            'description': row[2],
-            'x': row[3],
-            'y': row[4]
-        })
-
-    # Obtener la próxima predicción mayor a 400 después de la hora actual
-    current_time = datetime.now()
-    query_next_prediction = """
-        SELECT Fecha_Hora, prediction, Description, X, Y
-        FROM predicciones
-        WHERE prediction > 400 AND Fecha_Hora > %s
-        ORDER BY Fecha_Hora ASC LIMIT 1
-    """
-    cur.execute(query_next_prediction, (current_time,))
-    next_prediction = cur.fetchone()
-
+    """, (timestamp,))
+    
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
+    
+    # Crear una lista de puntos de datos
+    points = []
+    for row in rows:
+        point = {
+            'estacion': row[0],
+            'x': row[1],
+            'y': row[2],
+            'ida': row[3],
+            'vuelta': row[4],
+            'description': row[5],
+        }
+        points.append(point)
 
-    return jsonify({'data': data, 'next_prediction': next_prediction})
+    return jsonify(points)
+
+@app.route('/next_prediction/<threshold>')
+def next_prediction(threshold):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    
+    # Obtener la hora actual
+    now = datetime.now()
+    
+    # Consultar el próximo valor que supere el umbral
+    cur.execute("""
+        SELECT Estacion, Fecha_Hora, ida, vuelta
+        FROM predicciones
+        WHERE (ida > %s OR vuelta > %s) AND Fecha_Hora > %s
+        ORDER BY Fecha_Hora
+        LIMIT 1
+    """, (threshold, threshold, now))
+
+    next_prediction = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if next_prediction:
+        return jsonify({
+            'estacion': next_prediction[0],
+            'fecha_hora': next_prediction[1],
+            'ida': next_prediction[2],
+            'vuelta': next_prediction[3]
+        })
+    else:
+        return jsonify({'error': 'No hay predicciones próximas que superen el umbral.'})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -6,83 +6,59 @@
     <title>Mapa de Predicciones</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 600px; }
-        #high-predictions {
-            margin-top: 20px;
-        }
-        .prediction-item {
-            margin: 10px 0;
-            font-family: Arial, sans-serif;
+        #map {
+            height: 600px;
         }
     </style>
 </head>
 <body>
-    <h1>Mapa de Predicciones</h1>
-    
-    <!-- Formulario para seleccionar fecha y hora -->
-    <form id="dateForm">
-        <label for="date">Fecha:</label>
-        <input type="date" id="date" required>
-        
-        <label for="time">Hora:</label>
-        <input type="time" id="time" required step="3600"> <!-- Permitir solo horas enteras -->
-        
-        <button type="submit">Mostrar Predicciones</button>
-    </form>
-    
-    <div id="map"></div>
+    <h1>Predicciones de Estaciones</h1>
 
-    <!-- Sección para mostrar la próxima predicción mayor a 400 -->
-    <div id="high-predictions">
-        <h3>Próxima predicción mayor a 400</h3>
-        <div id="next-prediction"></div>
-    </div>
+    <label for="fecha">Fecha:</label>
+    <input type="date" id="fecha" value="{{ fecha_actual|date('Y-m-d') }}">
+    <label for="hora">Hora:</label>
+    <input type="time" id="hora" value="00:00">
+    <button id="mostrar">Mostrar Mapa</button>
+
+    <div id="map"></div>
+    <div id="next-prediction"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([0, 0], 2); // Cambia [0, 0] por el centro de tu mapa
+        var map = L.map('map').setView([40.416775, -3.703790], 5); // Centrar en España
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Maneja el envío del formulario
-        document.getElementById('dateForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Evita que el formulario se envíe de la manera tradicional
-            
-            var selectedDate = document.getElementById('date').value;
-            var selectedTime = document.getElementById('time').value;
-            var dateTime = selectedDate + ' ' + selectedTime; // Formato de fecha y hora
-            
-            // Llama a la ruta del servidor para obtener los datos
-            fetch('/map-data?datetime=' + encodeURIComponent(dateTime))
+        document.getElementById('mostrar').onclick = function () {
+            var fecha = document.getElementById('fecha').value;
+            var hora = document.getElementById('hora').value;
+
+            fetch(`/map_data/${fecha}/${hora}`)
                 .then(response => response.json())
-                .then(response => {
-                    // Limpia el mapa antes de agregar nuevos marcadores
-                    map.eachLayer(function (layer) {
-                        if (layer instanceof L.Marker) {
-                            map.removeLayer(layer);
-                        }
+                .then(data => {
+                    data.forEach(point => {
+                        L.marker([point.y, point.x]).addTo(map)
+                            .bindPopup(`<b>Estación: ${point.estacion}</b><br>Ida: ${point.ida}<br>Vuelta: ${point.vuelta}<br>${point.description}`);
                     });
+                });
 
-                    // Agrega los nuevos puntos al mapa
-                    response.data.forEach(point => {
-                        var marker = L.marker([point.y, point.x]).addTo(map);
-                        marker.bindPopup(`<b>${point.description}</b><br>${point.prediction}<br>${point.timestamp}`);
-                    });
-
-                    // Mostrar la próxima predicción mayor a 400
-                    var nextPredictionDiv = document.getElementById('next-prediction');
-                    if (response.next_prediction) {
-                        var nextPrediction = response.next_prediction;
-                        nextPredictionDiv.innerHTML = `
-                            <p>Predicción de <strong>${nextPrediction[1]}</strong> en ${nextPrediction[2]} a las ${nextPrediction[0]}</p>
-                        `;
+            fetch('/next_prediction/400')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('next-prediction').innerHTML = `<h2>Próxima predicción que supera 400:</h2>
+                            <p>Estación: ${data.estacion}</p>
+                            <p>Fecha y Hora: ${data.fecha_hora}</p>
+                            <p>Ida: ${data.ida}</p>
+                            <p>Vuelta: ${data.vuelta}</p>`;
                     } else {
-                        nextPredictionDiv.innerHTML = '<p>No hay predicciones mayores a 400 próximamente.</p>';
+                        document.getElementById('next-prediction').innerText = data.error;
                     }
-                })
-                .catch(error => console.error('Error:', error));
-        });
+                });
+        };
     </script>
 </body>
 </html>
