@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Configura tu URL de base de datos aquí
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://tu_usuario:tu_contraseña@localhost:5432/tu_base_de_datos')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 @app.route('/')
 def index():
