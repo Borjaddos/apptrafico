@@ -3,103 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Predicciones</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <title>Predicciones de Transporte</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
         #map {
-            height: 100vh; /* Altura completa de la ventana */
+            height: 400px; /* Ajustar la altura del mapa */
             width: 100%; /* Ancho completo */
         }
-
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
+        #prediction {
+            margin-top: 20px; /* Espacio entre el mapa y la sección de predicción */
         }
     </style>
 </head>
 <body>
-
-    <div id="controls">
-        <h1>Predicciones de Ida y Vuelta</h1>
-        <input type="date" id="fecha" />
-        <input type="time" id="hora" />
-        <button id="cargarMapa">Cargar Mapa</button>
+    <div>
+        <h1>Predicciones de Transporte</h1>
+        <input type="date" id="fecha" value="{{ fecha_actual }}">
+        <select id="hora">
+            <option value="00:00">00:00</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+        </select>
+        <button onclick="loadMapData()">Cargar Datos</button>
     </div>
-
     <div id="map"></div>
-
-    <div id="predicciones"></div>
-
+    <div id="prediction"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script>
-        $(document).ready(function() {
-            // Inicializar el mapa centrado en el País Vasco
-            var map = L.map('map').setView([43.3, -2.0], 7); // Coordenadas aproximadas del País Vasco
+        var map = L.map('map').setView([43.3, -2.0], 8); // Coordenadas aproximadas del País Vasco
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-            }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
 
-            $('#cargarMapa').click(function() {
-                var fecha = $('#fecha').val();
-                var hora = $('#hora').val();
+        function loadMapData() {
+            var fecha = document.getElementById('fecha').value;
+            var hora = document.getElementById('hora').value;
 
-                // Realizar la llamada AJAX para obtener los datos de la base de datos
-                $.ajax({
-                    url: '/map_data', // Cambia esto por la ruta que tienes en tu Flask para obtener datos
-                    method: 'GET',
-                    data: { fecha: fecha, hora: hora },
-                    success: function(data) {
-                        // Limpiar marcadores anteriores
-                        map.eachLayer(function(layer) {
-                            if (layer instanceof L.Marker) {
-                                map.removeLayer(layer);
-                            }
-                        });
+            fetch(`/map_data?fecha=${fecha}&hora=${hora}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        let color;
+                        if (item.ida > 400 || item.vuelta > 400) {
+                            color = "green";
+                        } else {
+                            color = "red";
+                        }
 
-                        // Agregar nuevos marcadores
-                        data.forEach(function(item) {
-                            // Determinar el color del marcador
-                            let color;
-                            if (item.ida > 400 || item.vuelta > 400) {
-                                color = 'red'; // Color para valores altos
-                            } else if (item.ida > 200 || item.vuelta > 200) {
-                                color = 'orange'; // Color para valores medianos
-                            } else {
-                                color = 'green'; // Color para valores bajos
-                            }
-
-                            // Crear un icono personalizado
-                            var markerIcon = L.divIcon({
-                                className: 'custom-marker',
-                                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%;"></div>`,
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 20]
-                            });
-
-                            // Agregar el marcador al mapa
-                            var marker = L.marker([item.Y, item.X], { icon: markerIcon }).addTo(map)
-                                .bindPopup(`Descripción: ${item.Description}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
-                        });
-                    },
-                    error: function(err) {
-                        console.error("Error al cargar los datos:", err);
+                        L.circleMarker([item.Y, item.X], {
+                            radius: 8,
+                            fillColor: color,
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).addTo(map)
+                        .bindPopup(`Estación: ${item.Estacion}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
+                    });
+                });
+            
+            fetch('/next_prediction')
+                .then(response => response.json())
+                .then(prediction => {
+                    if (prediction) {
+                        document.getElementById('prediction').innerHTML = `
+                            <h3>Próxima Predicción:</h3>
+                            <p>Estación: ${prediction.Estacion}</p>
+                            <p>Fecha y Hora: ${new Date(prediction.Fecha_Hora).toUTCString()}</p>
+                            <p>Ida: ${prediction.ida}</p>
+                            <p>Vuelta: ${prediction.vuelta}</p>
+                        `;
+                    } else {
+                        document.getElementById('prediction').innerHTML = `
+                            <h3>No hay predicciones futuras que superen 400.</h3>
+                        `;
                     }
                 });
-            });
-        });
+        }
     </script>
-
 </body>
 </html>
