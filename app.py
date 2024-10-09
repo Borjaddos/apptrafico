@@ -9,7 +9,9 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Obtener la fecha actual en formato 'Y-m-d'
+    fecha_actual = datetime.now().date().isoformat()  # Esto obtiene la fecha actual en el formato correcto
+    return render_template('index.html', fecha_actual=fecha_actual)
 
 @app.route('/map_data/<fecha>/<hora>')
 def map_data(fecha, hora):

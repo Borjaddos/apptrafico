@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Predicciones</title>
+    <title>Predicciones de Estaciones</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map {
             height: 600px;
+            width: 100%;
         }
     </style>
 </head>
@@ -15,50 +16,65 @@
     <h1>Predicciones de Estaciones</h1>
 
     <label for="fecha">Fecha:</label>
-    <input type="date" id="fecha" value="{{ fecha_actual|date('Y-m-d') }}">
+    <input type="date" id="fecha" value="{{ fecha_actual }}">
     <label for="hora">Hora:</label>
     <input type="time" id="hora" value="00:00">
     <button id="mostrar">Mostrar Mapa</button>
 
     <div id="map"></div>
-    <div id="next-prediction"></div>
+    <div id="predicciones"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([40.416775, -3.703790], 5); // Centrar en España
+        const mostrarBoton = document.getElementById('mostrar');
+        const map = L.map('map').setView([40.4168, -3.7038], 13); // Centrar en Madrid
 
+        // Capa de mapa
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        document.getElementById('mostrar').onclick = function () {
-            var fecha = document.getElementById('fecha').value;
-            var hora = document.getElementById('hora').value;
+        mostrarBoton.addEventListener('click', () => {
+            const fecha = document.getElementById('fecha').value;
+            const hora = document.getElementById('hora').value;
 
             fetch(`/map_data/${fecha}/${hora}`)
                 .then(response => response.json())
                 .then(data => {
+                    // Limpiar puntos anteriores
+                    map.eachLayer((layer) => {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Añadir nuevos puntos
                     data.forEach(point => {
-                        L.marker([point.y, point.x]).addTo(map)
-                            .bindPopup(`<b>Estación: ${point.estacion}</b><br>Ida: ${point.ida}<br>Vuelta: ${point.vuelta}<br>${point.description}`);
+                        const marker = L.marker([point.y, point.x]).addTo(map)
+                            .bindPopup(`<b>${point.description}</b><br>Ida: ${point.ida}<br>Vuelta: ${point.vuelta}`);
                     });
                 });
 
-            fetch('/next_prediction/400')
+            // Consultar la próxima predicción que supera un umbral
+            const threshold = 400; // Cambia este valor según tus necesidades
+            fetch(`/next_prediction/${threshold}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (!data.error) {
-                        document.getElementById('next-prediction').innerHTML = `<h2>Próxima predicción que supera 400:</h2>
+                    const prediccionesDiv = document.getElementById('predicciones');
+                    prediccionesDiv.innerHTML = ''; // Limpiar predicciones anteriores
+                    if (data.error) {
+                        prediccionesDiv.innerHTML = `<p>${data.error}</p>`;
+                    } else {
+                        prediccionesDiv.innerHTML = `
+                            <h3>Próxima Predicción:</h3>
                             <p>Estación: ${data.estacion}</p>
                             <p>Fecha y Hora: ${data.fecha_hora}</p>
                             <p>Ida: ${data.ida}</p>
-                            <p>Vuelta: ${data.vuelta}</p>`;
-                    } else {
-                        document.getElementById('next-prediction').innerText = data.error;
+                            <p>Vuelta: ${data.vuelta}</p>
+                        `;
                     }
                 });
-        };
+        });
     </script>
 </body>
 </html>
