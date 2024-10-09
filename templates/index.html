@@ -25,17 +25,17 @@
         <input type="date" id="date" required>
         
         <label for="time">Hora:</label>
-        <input type="time" id="time" required step="3600"> <!-- Permitir solo horas enteras (3600 segundos) -->
+        <input type="time" id="time" required step="3600"> <!-- Permitir solo horas enteras -->
         
         <button type="submit">Mostrar Predicciones</button>
     </form>
     
     <div id="map"></div>
 
-    <!-- Sección para mostrar predicciones mayores a 450 -->
+    <!-- Sección para mostrar la próxima predicción mayor a 400 -->
     <div id="high-predictions">
-        <h3>Predicciones mayores a 450</h3>
-        <ul id="prediction-list"></ul>
+        <h3>Próxima predicción mayor a 400</h3>
+        <div id="next-prediction"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -56,7 +56,7 @@
             // Llama a la ruta del servidor para obtener los datos
             fetch('/map-data?datetime=' + encodeURIComponent(dateTime))
                 .then(response => response.json())
-                .then(data => {
+                .then(response => {
                     // Limpia el mapa antes de agregar nuevos marcadores
                     map.eachLayer(function (layer) {
                         if (layer instanceof L.Marker) {
@@ -64,23 +64,22 @@
                         }
                     });
 
-                    // Limpia la lista de predicciones mayores a 450
-                    var predictionList = document.getElementById('prediction-list');
-                    predictionList.innerHTML = '';
-
                     // Agrega los nuevos puntos al mapa
-                    data.forEach(point => {
+                    response.data.forEach(point => {
                         var marker = L.marker([point.y, point.x]).addTo(map);
                         marker.bindPopup(`<b>${point.description}</b><br>${point.prediction}<br>${point.timestamp}`);
-
-                        // Si la predicción es mayor a 450, añadirla a la lista
-                        if (point.prediction > 450) {
-                            var listItem = document.createElement('li');
-                            listItem.className = 'prediction-item';
-                            listItem.textContent = `Predicción de ${point.prediction} en ${point.description} a las ${point.timestamp}`;
-                            predictionList.appendChild(listItem);
-                        }
                     });
+
+                    // Mostrar la próxima predicción mayor a 400
+                    var nextPredictionDiv = document.getElementById('next-prediction');
+                    if (response.next_prediction) {
+                        var nextPrediction = response.next_prediction;
+                        nextPredictionDiv.innerHTML = `
+                            <p>Predicción de <strong>${nextPrediction[1]}</strong> en ${nextPrediction[2]} a las ${nextPrediction[0]}</p>
+                        `;
+                    } else {
+                        nextPredictionDiv.innerHTML = '<p>No hay predicciones mayores a 400 próximamente.</p>';
+                    }
                 })
                 .catch(error => console.error('Error:', error));
         });

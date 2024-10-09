@@ -1,8 +1,9 @@
-from flask import Flask, render_template, jsonify, request
-import psycopg2 
+from flask import Flask, jsonify, render_template, request
+import psycopg2
 import os
+from datetime import datetime
 
-app = Flask(__name__)   
+app = Flask(__name__)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -12,39 +13,46 @@ def index():
 
 @app.route('/map-data')
 def map_data():
-    # Obtiene la fecha y hora de la consulta
-    datetime = request.args.get('datetime')
+    # Obtener la fecha y hora seleccionada por el usuario
+    datetime_str = request.args.get('datetime')
     
-    # Conexión a la base de datos
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    
-    # Consulta para obtener datos para la fecha y hora seleccionadas
-    cur.execute("""
-        SELECT Fecha_Hora, prediction, Description, X, Y 
-        FROM predicciones 
-        WHERE Fecha_Hora = %s;
-    """, (datetime,))
 
-    rows = cur.fetchall()
+    # Obtener los puntos para la fecha y hora seleccionada
+    query = """
+        SELECT Fecha_Hora, prediction, Description, X, Y
+        FROM predicciones
+        WHERE Fecha_Hora = %s
+    """
+    cur.execute(query, (datetime_str,))
+    results = cur.fetchall()
 
-    # Cierra la conexión
-    cur.close()
-    conn.close()
-
-    # Prepara los datos para el mapa
-    map_points = []
-    for row in rows:
-        timestamp, prediction, description, x, y = row
-        map_points.append({
-            "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-            "prediction": prediction,
-            "description": description,
-            "x": x,
-            "y": y
+    # Formato de los resultados
+    data = []
+    for row in results:
+        data.append({
+            'timestamp': row[0].strftime('%Y-%m-%d %H:%M:%S'),
+            'prediction': row[1],
+            'description': row[2],
+            'x': row[3],
+            'y': row[4]
         })
 
-    return jsonify(map_points)
+    # Obtener la próxima predicción mayor a 400 después de la hora actual
+    current_time = datetime.now()
+    query_next_prediction = """
+        SELECT Fecha_Hora, prediction, Description, X, Y
+        FROM predicciones
+        WHERE prediction > 400 AND Fecha_Hora > %s
+        ORDER BY Fecha_Hora ASC LIMIT 1
+    """
+    cur.execute(query_next_prediction, (current_time,))
+    next_prediction = cur.fetchone()
+
+    conn.close()
+
+    return jsonify({'data': data, 'next_prediction': next_prediction})
 
 if __name__ == '__main__':
     app.run(debug=True)
