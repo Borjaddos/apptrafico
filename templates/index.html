@@ -3,77 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predicciones de Estaciones</title>
+    <title>Predicciones en el Mapa</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map {
-            height: 600px;
+            height: 400px;
             width: 100%;
+        }
+        .card {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Predicciones de Estaciones</h1>
-
-    <label for="fecha">Fecha:</label>
-    <input type="date" id="fecha" value="{{ fecha_actual }}">
-    <label for="hora">Hora:</label>
+    <h1>Predicciones en el Mapa</h1>
+    
+    <label for="fecha">Selecciona la Fecha:</label>
+    <input type="date" id="fecha" value="{{ fecha_actual.strftime('%Y-%m-%d') }}">
+    
+    <label for="hora">Selecciona la Hora:</label>
     <input type="time" id="hora" value="00:00">
-    <button id="mostrar">Mostrar Mapa</button>
-
+    
+    <button id="cargarMapa">Cargar Mapa</button>
+    
     <div id="map"></div>
-    <div id="predicciones"></div>
-
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <h2>Próxima Predicción Mayor a 400:</h2>
+    <div id="prediccion"></div>
+    
     <script>
-        const mostrarBoton = document.getElementById('mostrar');
-        const map = L.map('map').setView([40.4168, -3.7038], 13); // Centrar en Madrid
+        $(document).ready(function() {
+            $('#cargarMapa').click(function() {
+                var fecha = $('#fecha').val();
+                var hora = $('#hora').val();
+                $.getJSON('/map_data/' + fecha + '/' + hora, function(data) {
+                    // Inicializar el mapa
+                    var map = L.map('map').setView([40.4168, -3.7038], 13); // Coordenadas de Madrid
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                    }).addTo(map);
 
-        // Capa de mapa
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(map);
+                    // Limpiar marcadores anteriores
+                    for (var marker of window.markers || []) {
+                        map.removeLayer(marker);
+                    }
+                    window.markers = [];
 
-        mostrarBoton.addEventListener('click', () => {
-            const fecha = document.getElementById('fecha').value;
-            const hora = document.getElementById('hora').value;
-
-            fetch(`/map_data/${fecha}/${hora}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Limpiar puntos anteriores
-                    map.eachLayer((layer) => {
-                        if (layer instanceof L.Marker) {
-                            map.removeLayer(layer);
-                        }
-                    });
-
-                    // Añadir nuevos puntos
-                    data.forEach(point => {
-                        const marker = L.marker([point.y, point.x]).addTo(map)
-                            .bindPopup(`<b>${point.description}</b><br>Ida: ${point.ida}<br>Vuelta: ${point.vuelta}`);
+                    // Agregar nuevos marcadores
+                    data.forEach(function(item) {
+                        // Determinar color del marcador según ida y vuelta
+                        var color = getMarkerColor(item.ida, item.vuelta);
+                        var marker = L.circleMarker([item.Y, item.X], {
+                            radius: 8,
+                            fillColor: color,
+                            color: color,
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).addTo(map)
+                        .bindPopup(`Descripción: ${item.description}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
+                        window.markers.push(marker);
                     });
                 });
 
-            // Consultar la próxima predicción que supera un umbral
-            const threshold = 400; // Cambia este valor según tus necesidades
-            fetch(`/next_prediction/${threshold}`)
-                .then(response => response.json())
-                .then(data => {
-                    const prediccionesDiv = document.getElementById('predicciones');
-                    prediccionesDiv.innerHTML = ''; // Limpiar predicciones anteriores
+                // Cargar la próxima predicción
+                $.getJSON('/next_prediction/400', function(data) {
                     if (data.error) {
-                        prediccionesDiv.innerHTML = `<p>${data.error}</p>`;
+                        $('#prediccion').html(data.error);
                     } else {
-                        prediccionesDiv.innerHTML = `
-                            <h3>Próxima Predicción:</h3>
-                            <p>Estación: ${data.estacion}</p>
-                            <p>Fecha y Hora: ${data.fecha_hora}</p>
-                            <p>Ida: ${data.ida}</p>
-                            <p>Vuelta: ${data.vuelta}</p>
-                        `;
+                        $('#prediccion').html(`
+                            Estación: ${data.estacion}<br>
+                            Fecha y Hora: ${data.fecha_hora}<br>
+                            Ida: ${data.ida}<br>
+                            Vuelta: ${data.vuelta}
+                        `);
                     }
                 });
+            });
+
+            function getMarkerColor(ida, vuelta) {
+                if (ida > 450 || vuelta > 450) {
+                    return 'red';
+                } else if (ida > 300 || vuelta > 300) {
+                    return 'orange';
+                } else {
+                    return 'green';
+                }
+            }
         });
     </script>
 </body>
