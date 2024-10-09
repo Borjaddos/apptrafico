@@ -6,7 +6,8 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Configura tu URL de base de datos aquí
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = "postgresql://midb_9oqp_user:rfJeUk8tCjR7901mCItUuVEq3mvzaRho@dpg-cs2mj38gph6c73866np0-a.frankfurt-postgres.render.com/midb_9oqp"
+
 
 @app.route('/')
 def index():
@@ -19,7 +20,7 @@ def index():
     cur = conn.cursor()
     
     # Consulta para obtener las estaciones (ajusta según tu esquema)
-    cur.execute("SELECT * FROM estaciones")  
+    cur.execute("SELECT * FROM predicciones")  
     estaciones = cur.fetchall()
     
     # Cierra la conexión a la base de datos
