@@ -4,27 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acerca de</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #007bff;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 0.8em;
+            color: #555;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Acerca de esta Aplicación</h1>
-    <p>
-        Esta aplicación proporciona predicciones de transporte en tiempo real, utilizando datos históricos
-        para ayudar a los usuarios a planificar sus viajes de manera más eficiente.
-    </p>
-    <h2>Objetivos</h2>
-    <ul>
-        <li>Visualizar el tráfico de transporte en tiempo real.</li>
-        <li>Ofrecer predicciones precisas sobre la disponibilidad de servicios de transporte.</li>
-        <li>Facilitar la planificación de rutas para los usuarios.</li>
-    </ul>
-    
-    <h2>Mejoras Futuras</h2>
-    <ul>
-        <li>Integrar datos en tiempo real para mejorar la precisión de las predicciones.</li>
-        <li>Agregar funciones de análisis de datos históricos para identificar tendencias.</li>
-        <li>Implementar un sistema de notificaciones para alertar a los usuarios sobre cambios en el tráfico.</li>
-    </ul>
-    
-    <a href="/">Volver al inicio</a>
+    <header>
+        <h1>Acerca de esta Aplicación</h1>
+    </header>
+    <div class="container">
+        <p>
+            Esta aplicación proporciona predicciones de transporte en tiempo real, utilizando datos históricos
+            para ayudar a los usuarios a planificar sus viajes de manera más eficiente.
+        </p>
+        <h2>Objetivos</h2>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Visualizar el tráfico de transporte en tiempo real.</li>
+            <li><i class="fas fa-check-circle"></i> Ofrecer predicciones precisas sobre la disponibilidad de servicios de transporte.</li>
+            <li><i class="fas fa-check-circle"></i> Facilitar la planificación de rutas para los usuarios.</li>
+        </ul>
+        
+        <h2>Mejoras Futuras</h2>
+        <ul>
+            <li><i class="fas fa-arrow-up"></i> Integrar datos en tiempo real para mejorar la precisión de las predicciones.</li>
+            <li><i class="fas fa-arrow-up"></i> Agregar funciones de análisis de datos históricos para identificar tendencias.</li>
+            <li><i class="fas fa-arrow-up"></i> Implementar un sistema de notificaciones para alertar a los usuarios sobre cambios en el tráfico.</li>
+        </ul>
+        
+        <a href="/">Volver al inicio</a>
+    </div>
+    <footer>
+        &copy; 2024 Predicciones de Transporte. Todos los derechos reservados.
+    </footer>
 </body>
 </html>
+
