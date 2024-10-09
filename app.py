@@ -6,29 +6,13 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Configura tu URL de base de datos aquí
-DATABASE_URL = "postgresql://midb_9oqp_user:rfJeUk8tCjR7901mCItUuVEq3mvzaRho@dpg-cs2mj38gph6c73866np0-a.frankfurt-postgres.render.com/midb_9oqp"
-
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://tu_usuario:tu_contraseña@localhost:5432/tu_base_de_datos')
 
 @app.route('/')
 def index():
-    # Obtener la fecha y hora actuales
+    # Obtener la fecha actual
     fecha_actual = datetime.now().date()
-    hora_actual = datetime.now().strftime('%H:00')
-    
-    # Conectar a la base de datos y obtener las estaciones
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    
-    # Consulta para obtener las estaciones (ajusta según tu esquema)
-    cur.execute("SELECT * FROM predicciones")  
-    estaciones = cur.fetchall()
-    
-    # Cierra la conexión a la base de datos
-    cur.close()
-    conn.close()
-
-    # Pasar las estaciones a la plantilla
-    return render_template('index.html', fecha_actual=fecha_actual, hora_actual=hora_actual, estaciones=estaciones)
+    return render_template('index.html', fecha_actual=fecha_actual)
 
 @app.route('/map_data')
 def map_data():
@@ -99,10 +83,6 @@ def next_prediction():
     conn.close()
 
     return jsonify(prediction)
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -4,79 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Predicciones de Transporte</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
     <style>
-        body { font-family: Arial, sans-serif; }
-        #map { height: 400px; }
-        .container { margin: 20px; }
-        .prediccion { margin-top: 20px; }
+        #map {
+            height: 400px; /* Ajustar la altura del mapa */
+            width: 100%; /* Ancho completo */
+        }
+        #prediction {
+            margin-top: 20px; /* Espacio entre el mapa y la sección de predicción */
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/about">About</a></li>
-            </ul>
-        </nav>
-
+    <div>
         <h1>Predicciones de Transporte</h1>
-        <label for="fecha">Selecciona una fecha:</label>
         <input type="date" id="fecha" value="{{ fecha_actual }}">
-
-        <label for="hora">Selecciona una hora:</label>
-        <input type="time" id="hora" value="{{ hora_actual }}" step="3600">
-
-        <button id="actualizar">Actualizar Mapa</button>
-
-        <div id="map"></div>
-
-        <div class="prediccion">
-            <h3>Próxima Predicción Mayor a 400</h3>
-            <!-- Aquí puedes mostrar los detalles de la próxima predicción -->
-            <div id="proxima-prediccion">
-                <!-- Lógica para mostrar la predicción puede ir aquí -->
-            </div>
-        </div>
+        <select id="hora">
+            <option value="00:00">00:00</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+        </select>
+        <button onclick="loadMapData()">Cargar Datos</button>
     </div>
-
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <div id="map"></div>
+    <div id="prediction"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([43.25, -2.96], 10);
+        var map = L.map('map').setView([43.3, -2.0], 8); // Coordenadas aproximadas del País Vasco
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            maxZoom: 19,
         }).addTo(map);
 
-        var estaciones = JSON.parse('{{ estaciones | tojson | safe }}');
-        estaciones.forEach(function(estacion) {
-            var markerColor;
+        function loadMapData() {
+            var fecha = document.getElementById('fecha').value;
+            var hora = document.getElementById('hora').value;
 
-            if (estacion.ida > 500 || estacion.vuelta > 500) {
-                markerColor = 'red';
-            } else if (estacion.ida > 300 || estacion.vuelta > 300) {
-                markerColor = 'orange';
-            } else {
-                markerColor = 'green';
-            }
+            fetch(`/map_data?fecha=${fecha}&hora=${hora}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        let color;
+                        if (item.ida > 400 || item.vuelta > 400) {
+                            color = "green";
+                        } else {
+                            color = "red";
+                        }
 
-            var marker = L.circleMarker([estacion.Y, estacion.X], {
-                color: markerColor,
-                radius: 8
-            }).addTo(map);
-
-            marker.bindPopup("<b>Estación: " + estacion.Estacion + "</b><br>" +
-                "Ida: " + estacion.ida + "<br>" +
-                "Vuelta: " + estacion.vuelta);
-        });
-
-        document.getElementById("actualizar").onclick = function() {
-            var fecha = document.getElementById("fecha").value;
-            var hora = document.getElementById("hora").value;
-            window.location.href = "/?fecha=" + fecha + "&hora=" + hora;
-        };
+                        L.circleMarker([item.Y, item.X], {
+                            radius: 8,
+                            fillColor: color,
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).addTo(map)
+                        .bindPopup(`Estación: ${item.Estacion}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
+                    });
+                });
+            
+            fetch('/next_prediction')
+                .then(response => response.json())
+                .then(prediction => {
+                    if (prediction) {
+                        document.getElementById('prediction').innerHTML = `
+                            <h3>Próxima Predicción:</h3>
+                            <p>Estación: ${prediction.Estacion}</p>
+                            <p>Fecha y Hora: ${new Date(prediction.Fecha_Hora).toUTCString()}</p>
+                            <p>Ida: ${prediction.ida}</p>
+                            <p>Vuelta: ${prediction.vuelta}</p>
+                        `;
+                    } else {
+                        document.getElementById('prediction').innerHTML = `
+                            <h3>No hay predicciones futuras que superen 400.</h3>
+                        `;
+                    }
+                });
+        }
     </script>
 </body>
 </html>
-
