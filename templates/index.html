@@ -2,53 +2,65 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa de Predicciones</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map {
-            height: 600px;
-            width: 100%;
-        }
+        #map { height: 600px; }
     </style>
 </head>
 <body>
     <h1>Mapa de Predicciones</h1>
     
-    <!-- Añade un input para seleccionar la fecha -->
-    <input type="date" id="dateInput" value="2024-10-01">
-    <button id="loadMap">Cargar Mapa</button>
-
+    <!-- Formulario para seleccionar fecha y hora -->
+    <form id="dateForm">
+        <label for="date">Fecha:</label>
+        <input type="date" id="date" required>
+        
+        <label for="time">Hora:</label>
+        <input type="time" id="time" required>
+        
+        <button type="submit">Mostrar Predicciones</button>
+    </form>
+    
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializar el mapa
-        const map = L.map('map').setView([0, 0], 2); // Cambia las coordenadas según necesites
-
-        // Añadir una capa de OpenStreetMap
+        var map = L.map('map').setView([0, 0], 2); // Cambia [0, 0] por el centro de tu mapa
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
+            maxZoom: 19
         }).addTo(map);
 
-        // Función para cargar los datos del mapa
-        async function loadMapData(fecha) {
-            const response = await fetch(`/map_data/${fecha}`);
-            const data = await response.json();
+        // Maneja el envío del formulario
+        document.getElementById('dateForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Evita que el formulario se envíe de la manera tradicional
+            
+            var selectedDate = document.getElementById('date').value;
+            var selectedTime = document.getElementById('time').value;
+            var dateTime = selectedDate + ' ' + selectedTime; // Formato de fecha y hora
+            
+            // Llama a la ruta del servidor para obtener los datos
+            fetch('/map-data?datetime=' + encodeURIComponent(dateTime))
+                .then(response => response.json())
+                .then(data => {
+                    // Limpia el mapa antes de agregar nuevos marcadores
+                    map.eachLayer(function (layer) {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
 
-            data.forEach(point => {
-                const { x, y, description, prediction } = point;
-                // Añadir un marcador en el mapa
-                L.marker([y, x]).addTo(map)
-                    .bindPopup(`<strong>${description}</strong><br>Predicción: ${prediction}`);
-            });
-        }
-
-        // Cargar el mapa cuando el botón es presionado
-        document.getElementById('loadMap').addEventListener('click', () => {
-            const selectedDate = document.getElementById('dateInput').value;
-            loadMapData(selectedDate);
+                    // Agrega los nuevos puntos al mapa
+                    data.forEach(point => {
+                        var marker = L.marker([point.y, point.x]).addTo(map);
+                        marker.bindPopup(`<b>${point.description}</b><br>${point.prediction}<br>${point.timestamp}`);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
         });
     </script>
 </body>
 </html>
+
+

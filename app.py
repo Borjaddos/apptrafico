@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, render_template, jsonify, request
 import psycopg2 
 import os
 
@@ -10,33 +10,41 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 def index():
     return render_template('index.html')
 
-@app.route('/map_data/<fecha>')
-def map_data(fecha):
+@app.route('/map-data')
+def map_data():
+    # Obtiene la fecha y hora de la consulta
+    datetime = request.args.get('datetime')
+    
+    # Conexión a la base de datos
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    cur.execute("""
-        SELECT prediction, Description, X, Y 
-        FROM predicciones 
-        WHERE Fecha_Hora::date = %s
-    """, (fecha,))
     
+    # Consulta para obtener datos para la fecha y hora seleccionadas
+    cur.execute("""
+        SELECT Fecha_Hora, prediction, Description, X, Y 
+        FROM predicciones 
+        WHERE Fecha_Hora = %s;
+    """, (datetime,))
+
     rows = cur.fetchall()
+
+    # Cierra la conexión
     cur.close()
     conn.close()
 
-    # Transformamos los datos en un formato adecuado
-    points = []
+    # Prepara los datos para el mapa
+    map_points = []
     for row in rows:
-        prediction, description, x, y = row
-        points.append({
-            'prediction': prediction,
-            'description': description,
-            'x': x,
-            'y': y
+        timestamp, prediction, description, x, y = row
+        map_points.append({
+            "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "prediction": prediction,
+            "description": description,
+            "x": x,
+            "y": y
         })
 
-    return jsonify(points)
+    return jsonify(map_points)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
