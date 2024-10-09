@@ -23,6 +23,24 @@
         h1 {
             margin: 0;
         }
+        nav {
+            background-color: #0056b3; /* Color del menú de navegación */
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-weight: bold; /* Hacer que el texto sea más llamativo */
+        }
+        nav a:hover {
+            background-color: #004494; /* Color de fondo al pasar el ratón */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Sombra al pasar el ratón */
+        }
         .container {
             max-width: 800px;
             margin: 20px auto;
@@ -32,7 +50,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         #map {
-            height: 400px; /* Ajustar la altura del mapa */
+            height: 500px; /* Aumentar la altura del mapa */
             width: 100%; /* Ancho completo */
             border-radius: 8px;
             margin-bottom: 20px;
@@ -46,8 +64,14 @@
             margin: 10px 0;
             border-radius: 5px;
             border: 1px solid #ddd;
-            width: calc(50% - 22px);
+            width: calc(45% - 22px);
             box-sizing: border-box;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center; /* Centrar el botón */
+            align-items: center;
+            margin-top: 20px;
         }
         button {
             padding: 10px 15px;
@@ -57,22 +81,9 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
-            margin-left: 10px;
+            width: 45%; /* Ajustar el tamaño del botón */
         }
         button:hover {
-            background-color: #0056b3;
-        }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        a:hover {
             background-color: #0056b3;
         }
         footer {
@@ -90,6 +101,9 @@
     <header>
         <h1>Predicciones de Transporte</h1>
     </header>
+    <nav>
+        <a href="/about">Acerca de</a>
+    </nav>
     <div class="container">
         <div>
             <input type="date" id="fecha" value="{{ fecha_actual }}">
@@ -119,8 +133,9 @@
                 <option value="22:00">22:00</option>
                 <option value="23:00">23:00</option>
             </select>
+        </div>
+        <div class="button-container">
             <button onclick="loadMapData()">Cargar Datos</button>
-            <a href="/about">Acerca de</a>
         </div>
         <div id="map"></div>
         <div id="prediction"></div>
