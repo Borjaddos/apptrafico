@@ -3,97 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predicciones en el Mapa</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>Mapa de Predicciones</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        #map {
-            height: 400px;
-            width: 100%;
+        body {
+            margin: 0;
+            padding: 0;
         }
-        .card {
-            border: 1px solid #ccc;
-            margin: 10px;
+
+        #map {
+            height: 100vh; /* Altura completa de la ventana */
+            width: 100%; /* Ancho completo */
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
             padding: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>Predicciones en el Mapa</h1>
-    
-    <label for="fecha">Selecciona la Fecha:</label>
-    <input type="date" id="fecha" value="{{ fecha_actual.strftime('%Y-%m-%d') }}">
-    
-    <label for="hora">Selecciona la Hora:</label>
-    <input type="time" id="hora" value="00:00">
-    
-    <button id="cargarMapa">Cargar Mapa</button>
-    
+
+    <div id="controls">
+        <h1>Predicciones de Ida y Vuelta</h1>
+        <input type="date" id="fecha" />
+        <input type="time" id="hora" />
+        <button id="cargarMapa">Cargar Mapa</button>
+    </div>
+
     <div id="map"></div>
-    
-    <h2>Próxima Predicción Mayor a 400:</h2>
-    <div id="prediccion"></div>
-    
+
+    <div id="predicciones"></div>
+
     <script>
         $(document).ready(function() {
+            // Inicializar el mapa centrado en el País Vasco
+            var map = L.map('map').setView([43.3, -2.0], 7); // Coordenadas aproximadas del País Vasco
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
             $('#cargarMapa').click(function() {
                 var fecha = $('#fecha').val();
                 var hora = $('#hora').val();
-                $.getJSON('/map_data/' + fecha + '/' + hora, function(data) {
-                    // Inicializar el mapa
-                    var map = L.map('map').setView([40.4168, -3.7038], 13); // Coordenadas de Madrid
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                    }).addTo(map);
 
-                    // Limpiar marcadores anteriores
-                    for (var marker of window.markers || []) {
-                        map.removeLayer(marker);
-                    }
-                    window.markers = [];
+                // Realizar la llamada AJAX para obtener los datos de la base de datos
+                $.ajax({
+                    url: '/map_data', // Cambia esto por la ruta que tienes en tu Flask para obtener datos
+                    method: 'GET',
+                    data: { fecha: fecha, hora: hora },
+                    success: function(data) {
+                        // Limpiar marcadores anteriores
+                        map.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker) {
+                                map.removeLayer(layer);
+                            }
+                        });
 
-                    // Agregar nuevos marcadores
-                    data.forEach(function(item) {
-                        // Determinar color del marcador según ida y vuelta
-                        var color = getMarkerColor(item.ida, item.vuelta);
-                        var marker = L.circleMarker([item.Y, item.X], {
-                            radius: 8,
-                            fillColor: color,
-                            color: color,
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }).addTo(map)
-                        .bindPopup(`Descripción: ${item.description}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
-                        window.markers.push(marker);
-                    });
-                });
+                        // Agregar nuevos marcadores
+                        data.forEach(function(item) {
+                            // Determinar el color del marcador
+                            let color;
+                            if (item.ida > 400 || item.vuelta > 400) {
+                                color = 'red'; // Color para valores altos
+                            } else if (item.ida > 200 || item.vuelta > 200) {
+                                color = 'orange'; // Color para valores medianos
+                            } else {
+                                color = 'green'; // Color para valores bajos
+                            }
 
-                // Cargar la próxima predicción
-                $.getJSON('/next_prediction/400', function(data) {
-                    if (data.error) {
-                        $('#prediccion').html(data.error);
-                    } else {
-                        $('#prediccion').html(`
-                            Estación: ${data.estacion}<br>
-                            Fecha y Hora: ${data.fecha_hora}<br>
-                            Ida: ${data.ida}<br>
-                            Vuelta: ${data.vuelta}
-                        `);
+                            // Crear un icono personalizado
+                            var markerIcon = L.divIcon({
+                                className: 'custom-marker',
+                                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%;"></div>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 20]
+                            });
+
+                            // Agregar el marcador al mapa
+                            var marker = L.marker([item.Y, item.X], { icon: markerIcon }).addTo(map)
+                                .bindPopup(`Descripción: ${item.Description}<br>Ida: ${item.ida}<br>Vuelta: ${item.vuelta}`);
+                        });
+                    },
+                    error: function(err) {
+                        console.error("Error al cargar los datos:", err);
                     }
                 });
             });
-
-            function getMarkerColor(ida, vuelta) {
-                if (ida > 450 || vuelta > 450) {
-                    return 'red';
-                } else if (ida > 300 || vuelta > 300) {
-                    return 'orange';
-                } else {
-                    return 'green';
-                }
-            }
         });
     </script>
+
 </body>
 </html>
