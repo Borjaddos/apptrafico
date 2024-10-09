@@ -12,7 +12,8 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://tu_usuario:tu_contraseña
 def index():
     # Obtener la fecha actual
     fecha_actual = datetime.now().date()
-    return render_template('index.html', fecha_actual=fecha_actual)
+    hora_actual = datetime.now().strftime('%H:00')
+    return render_template('index.html', fecha_actual=fecha_actual, hora_actual=hora_actual)
 
 @app.route('/map_data')
 def map_data():
@@ -87,7 +88,6 @@ def next_prediction():
 @app.route('/about')
 def about():
     return render_template('about.html')
-
 
 if __name__ == "__main__":
     app.run(debug=True)
