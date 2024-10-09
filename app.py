@@ -10,10 +10,24 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://tu_usuario:tu_contraseña
 
 @app.route('/')
 def index():
-    # Obtener la fecha actual
+    # Obtener la fecha y hora actuales
     fecha_actual = datetime.now().date()
     hora_actual = datetime.now().strftime('%H:00')
-    return render_template('index.html', fecha_actual=fecha_actual, hora_actual=hora_actual)
+    
+    # Conectar a la base de datos y obtener las estaciones
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    
+    # Consulta para obtener las estaciones (ajusta según tu esquema)
+    cur.execute("SELECT * FROM estaciones")  
+    estaciones = cur.fetchall()
+    
+    # Cierra la conexión a la base de datos
+    cur.close()
+    conn.close()
+
+    # Pasar las estaciones a la plantilla
+    return render_template('index.html', fecha_actual=fecha_actual, hora_actual=hora_actual, estaciones=estaciones)
 
 @app.route('/map_data')
 def map_data():
