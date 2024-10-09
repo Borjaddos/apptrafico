@@ -2,78 +2,52 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa con Puntos desde BD</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <title>Mapa de Predicciones</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 500px; }
-        #location-list { margin-top: 20px; }
+        #map {
+            height: 600px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
-    <h1>Mapa de Localizaciones</h1>
+    <h1>Mapa de Predicciones</h1>
+    
+    <!-- Añade un input para seleccionar la fecha -->
+    <input type="date" id="dateInput" value="2024-10-01">
+    <button id="loadMap">Cargar Mapa</button>
+
     <div id="map"></div>
 
-    <h2>Lista de Localizaciones</h2>
-    <div id="location-list"></div> <!-- Aquí se mostrarán los nombres de las localizaciones -->
-
-    <h2>Buscar Localizaciones</h2>
-    <form id="search-form">
-        <input type="text" id="search-query" placeholder="Nombre de la localización">
-        <button type="submit">Buscar</button>
-    </form>
-
-    <div id="search-results"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         // Inicializar el mapa
-        var map = L.map('map').setView([0, 0], 2);
+        const map = L.map('map').setView([0, 0], 2); // Cambia las coordenadas según necesites
 
-        // Agregar capa base del mapa
+        // Añadir una capa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Obtener las localizaciones desde el backend
-        fetch('/get_locations')
-            .then(response => response.json())
-            .then(data => {
-                // Añadir cada punto al mapa
-                data.forEach(location => {
-                    // Añadir marcadores en el mapa
-                    L.marker([location.latitude, location.longitude])
-                        .addTo(map)
-                        .bindPopup(`<b>${location.name}</b>`);
+        // Función para cargar los datos del mapa
+        async function loadMapData(fecha) {
+            const response = await fetch(`/map_data/${fecha}`);
+            const data = await response.json();
 
-                    // Mostrar el nombre de cada localización debajo del mapa
-                    var locationItem = document.createElement('div');
-                    locationItem.textContent = `Nombre: ${location.name}`;
-                    document.getElementById('location-list').appendChild(locationItem);
-                });
-            })
-            .catch(error => console.error('Error:', error));
+            data.forEach(point => {
+                const { x, y, description, prediction } = point;
+                // Añadir un marcador en el mapa
+                L.marker([y, x]).addTo(map)
+                    .bindPopup(`<strong>${description}</strong><br>Predicción: ${prediction}`);
+            });
+        }
 
-        // Manejar la búsqueda de localizaciones
-        document.getElementById('search-form').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevenir recarga de la página
-
-            var query = document.getElementById('search-query').value;
-
-            fetch(`/search_location?query=${query}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Limpiar los resultados anteriores
-                    document.getElementById('search-results').innerHTML = '';
-
-                    // Mostrar los resultados
-                    data.forEach(location => {
-                        var resultItem = document.createElement('div');
-                        resultItem.innerHTML = `<b>${location.name}</b> - Latitud: ${location.latitude}, Longitud: ${location.longitude}`;
-                        document.getElementById('search-results').appendChild(resultItem);
-                    });
-                })
-                .catch(error => console.error('Error:', error));
+        // Cargar el mapa cuando el botón es presionado
+        document.getElementById('loadMap').addEventListener('click', () => {
+            const selectedDate = document.getElementById('dateInput').value;
+            loadMapData(selectedDate);
         });
     </script>
 </body>
