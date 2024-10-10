@@ -162,9 +162,9 @@
                     data.forEach(item => {
                         let color;
                         if (item.ida > 400 || item.vuelta > 400) {
-                            color = "green";
-                        } else {
                             color = "red";
+                        } else {
+                            color = "green";
                         }
 
                         L.circleMarker([item.Y, item.X], {
