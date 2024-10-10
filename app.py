@@ -62,7 +62,7 @@ def next_prediction():
     query = """
     SELECT Fecha_Hora, ida, vuelta, Estacion
     FROM predicciones
-    WHERE Fecha_Hora > %s AND (ida > 1500 OR vuelta > 1500)
+    WHERE Fecha_Hora > %s AND (ida > 850 OR vuelta > 850)
     ORDER BY Fecha_Hora
     LIMIT 1
     """
